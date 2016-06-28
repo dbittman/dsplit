@@ -1,0 +1,7 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"jsonizer": "0.7.0",
+		"ncurses": "~master"
+	}
+}

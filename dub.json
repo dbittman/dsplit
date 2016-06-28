@@ -1,0 +1,13 @@
+{
+	"name": "dsplit",
+	"authors": [
+		"Daniel Bittman"
+	],
+	"dependencies": {
+		"ncurses": "~master",
+		"jsonizer":"*"
+	},
+	"description": "Speedrun Split Timer in D",
+	"copyright": "Copyright © 2016, dbittman",
+	"license": "MIT"
+}
