@@ -1,7 +1,7 @@
 import std.stdio;
 import deimos.ncurses.ncurses;
 import jsonizer;
-import std.conv, std.string, std.datetime, core.thread, std.math;
+import std.conv, std.string, std.datetime, core.thread, std.math, core.stdc.fenv;
 import std.algorithm : remove, sum;
 shared int row, col;
 struct Run {
@@ -99,6 +99,7 @@ void run(Game *game)
 		mvwprintw(wins.main, 1, 0, "                      Split       Total           Split       Total");
 		int line = 0;
 		for(size_t i=0;i<game.splitnames.length;i++) {
+			float sec = sw.peek().msecs() / 1000.0;
 			if(abs(cast(int)i - cast(int)split) >= ncd)
 				continue;
 			if(i == split)
@@ -110,20 +111,19 @@ void run(Game *game)
 			float diff = pb == null ? float.infinity : pbsec - prev;
 
 			if(pbsec != float.infinity) {
-				wprintw(wins.main, "%02.0f:%04.1f     ", diff / 60, cast(float)fmod(diff, 60.0));
-				wprintw(wins.main, "%02.0f:%04.1f", pbsec / 60, cast(float)fmod(pbsec, 60.0));
+				wprintw(wins.main, "%02d:%04.1f     ", cast(int)diff / 60, cast(float)fmod(diff, 60.0));
+				wprintw(wins.main, "%02d:%04.1f", cast(int)pbsec / 60, cast(float)fmod(pbsec, 60.0));
 			}
 
-			float sec = sw.peek().msecs / 1000.0;
 			prev = (i == 0 || i > run.splits.length) ? 0 : run.splits[i-1];
 			if(split == i) {
-				mvwprintw(wins.main, cast(int)line*2+2, 48, "%02.0f:%04.1f    ", (sec - prev) / 60, cast(float)fmod(sec - prev, 60.0));
-				mvwprintw(wins.main, cast(int)line*2+2, 60, "%02.0f:%04.1f    ", sec / 60, cast(float)fmod(sec, 60.0));
+				mvwprintw(wins.main, cast(int)line*2+2, 48, "%02d:%04.1f    ", cast(int)(sec - prev) / 60, cast(float)fmod(sec - prev, 60.0));
+				mvwprintw(wins.main, cast(int)line*2+2, 60, "%02d:%04.1f    ", cast(int)sec / 60, cast(float)fmod(sec, 60.0));
 			} else if(i < split) {
-				mvwprintw(wins.main, cast(int)line*2+2, 48, "%02.0f:%04.1f    ",
-						(run.splits[i] - prev) / 60, cast(float)fmod((run.splits[i] - prev), 60.0));
-				mvwprintw(wins.main, cast(int)line*2+2, 60, "%02.0f:%04.1f    ",
-						run.splits[i] / 60, cast(float)fmod(run.splits[i], 60.0));
+				mvwprintw(wins.main, cast(int)line*2+2, 48, "%02d:%04.1f    ",
+						cast(int)(run.splits[i] - prev) / 60, cast(float)fmod((run.splits[i] - prev), 60.0));
+				mvwprintw(wins.main, cast(int)line*2+2, 60, "%02d:%04.1f    ",
+						cast(int)run.splits[i] / 60, cast(float)fmod(run.splits[i], 60.0));
 			}
 
 			if(pbsec != float.infinity && i <= split) {
@@ -136,10 +136,10 @@ void run(Game *game)
 				} else {
 					wattron(wins.main, COLOR_PAIR(4) | A_BOLD);
 				}
-				mvwprintw(wins.main, cast(int)line*2+2, 78, "%c%02.0f:%04.1f",
-						(sec - pbsec) < 0 ? '-' : ' ', fabs(sec - pbsec) / 60, cast(float)fmod(fabs(sec - pbsec), 60.0));
-				wrefresh(wins.main);
-				refresh();
+				mvwprintw(wins.main, cast(int)line*2+2, 78, "%c%02d:%04.1f",
+						(sec - pbsec) < 0 ? '-' : ' ', cast(int)fabs(sec - pbsec) / 60, cast(float)fmod(fabs(sec - pbsec), 60.0));
+				//wrefresh(wins.main);
+				//refresh();
 				
 				wattroff(wins.main, A_BOLD);
 				wattroff(wins.main, COLOR_PAIR(2));
@@ -159,11 +159,12 @@ void run(Game *game)
 			sw.stop();
 			break;
 		} else if(c == ' ') {
-			run.splits ~= sw.peek().msecs / 1000.0;
-			float seg = sw.peek().msecs / 1000.0 - (split == 0 ? 0 : run.splits[$-2]);
+			float sec = sw.peek().msecs() / 1000.0;
+			run.splits ~= sec;
+			float seg = sec - (split == 0 ? 0 : run.splits[$-2]);
 			if(split >= game.best.length) {
 				game.best ~= seg;
-				run.gold ~= true;
+				run.gold ~= false;
 			} else if(game.best[split] > seg) {
 				game.best[split] = seg;
 				run.gold ~= true;
@@ -181,7 +182,8 @@ void run(Game *game)
 
 	nodelay(wins.main, false);
 	if(success) {
-		mvwprintw(wins.main, row-8, 0, "Completed - time: %1.1f. Do you want to save these splits (Y/n)? ", sw.peek().msecs / 1000.0);
+		float sec = sw.peek().msecs / 1000.0;
+		mvwprintw(wins.main, row-8, 0, "Completed - time: %02d:%04.1f. Do you want to save these splits (Y/n)? ", cast(int)sec / 60, cast(float)fmod(sec, 60.0));
 		wrefresh(wins.main);
 		int c = wgetch(wins.main);
 		wprintw(wins.main, "%c", cast(char)c);
