@@ -78,7 +78,11 @@ void run(Game *game)
 	wprintw(stats, "Running ");
 	wprintw(stats, toStringz(game.name));
 	wprintw(stats, " | ");
-	wprintw(stats, "Personal Best: %1.1f | Sum of Best: %1.1f", get_personal_best(game), game.best.length > 0 ? game.best[$-1] : float.infinity);
+	float b = game.best.length > 0 ? sum(game.best) : float.infinity;
+	if(game.runs.length == 0)
+		wprintw(stats, "No runs yet, so no stats yet!");
+	else
+		wprintw(stats, "Personal Best: %02d:%04.1f | Sum of Best: %02d:%04.1f", cast(int)get_personal_best(game) / 60, cast(float)fmod(get_personal_best(game), 60.0), cast(int)(b / 60), cast(float)fmod(b, 60.0));
 	wrefresh(stats);
 
 	auto run = new Run;
@@ -156,11 +160,12 @@ void run(Game *game)
 			break;
 		} else if(c == ' ') {
 			run.splits ~= sw.peek().msecs / 1000.0;
+			float seg = sw.peek().msecs / 1000.0 - (split == 0 ? 0 : run.splits[$-2]);
 			if(split >= game.best.length) {
-				game.best ~= sw.peek().msecs / 1000.0;
+				game.best ~= seg;
 				run.gold ~= true;
-			} else if(game.best[split] > sw.peek().msecs / 1000.0) {
-				game.best[split] = sw.peek().msecs / 1000.0;
+			} else if(game.best[split] > seg) {
+				game.best[split] = seg;
 				run.gold ~= true;
 			} else {
 				run.gold ~= false;
