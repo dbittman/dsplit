@@ -191,7 +191,7 @@ void run(Game *game)
 		if(c != 'n') {
 			game.runs ~= *run;
 			game.dirty = true;
-			if(sum(run.splits) < get_personal_best(game)) {
+			if(run.splits[$-1] < get_personal_best(game)) {
 				game.pb = game.runs.length - 1;
 			}
 		}
